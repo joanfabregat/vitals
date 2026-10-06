@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/joanfabregat/vitals/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/joanfabregat/vitals/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/joanfabregat/vitals)](https://github.com/joanfabregat/vitals/releases/latest)
-[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](#license)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![MSRV 1.85](https://img.shields.io/badge/rust-1.85%2B-orange)](https://github.com/joanfabregat/vitals/blob/main/Cargo.toml)
 [![Platform: Linux](https://img.shields.io/badge/platform-linux%20x86__64%20%7C%20aarch64-lightgrey)](#platform)
 
@@ -83,6 +83,4 @@ Linux only, on 64-bit targets. Release binaries are static musl builds for x86_6
 
 ## License
 
-Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option.
-
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+[MIT](LICENSE).
