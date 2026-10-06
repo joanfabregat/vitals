@@ -1,0 +1,83 @@
+name: Release
+
+# Runs when a GitHub release is published for a v* tag: builds the static
+# binaries, attaches them to the release, then attaches SHA256SUMS.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+env:
+  RUST_VERSION: "1.99.0"
+  CARGO_TERM_COLOR: always
+  TAG: ${{ github.event.release.tag_name }}
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - name: Check the tag matches Cargo.toml
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::tag $TAG does not match Cargo.toml version $version"
+            exit 1
+          fi
+      - name: Install Rust
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal --target "${{ matrix.target }}"
+          rustup default "$RUST_VERSION"
+      - run: cargo test --locked
+      - run: cargo build --locked --release --target "${{ matrix.target }}"
+      - name: Smoke-test and attach the binary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          asset="vitals-${{ matrix.target }}"
+          cp "target/${{ matrix.target }}/release/vitals" "$asset"
+          file "$asset" | grep -Eq 'static(ally|-pie) linked'
+          "./$asset" --version | grep -qx "vitals ${TAG#v}"
+          "./$asset" --plain
+          gh release upload "$TAG" "$asset" --clobber --repo "$GITHUB_REPOSITORY"
+
+  checksums:
+    name: Attach SHA256SUMS
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Hash the attached binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir assets
+          cd assets
+          gh release download "$TAG" --pattern 'vitals-*' --repo "$GITHUB_REPOSITORY"
+          sha256sum vitals-* > SHA256SUMS
+          cat SHA256SUMS
+          gh release upload "$TAG" SHA256SUMS --clobber --repo "$GITHUB_REPOSITORY"
